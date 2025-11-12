@@ -112,4 +112,6 @@ public enum AnimationClipName
     Charing_Run = 1, 
     Charging_Die = 2,
     Charging_Attack = 3,
+    Standing_ShootArrow = 4,
+    Idle = 5,
 }

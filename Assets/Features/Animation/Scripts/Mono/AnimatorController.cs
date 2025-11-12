@@ -3,10 +3,6 @@ using UnityEngine;
 public class AnimatorController : MonoBehaviour
 {
     private Animator[] Animators;
-    private void Awake()
-    {
-        Animators = FindObjectsOfType<Animator>();
-    }
 
     public void DeactivateAll()
     {

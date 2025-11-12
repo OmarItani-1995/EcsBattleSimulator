@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ae2fd8e086a5f94991b50e5ca890322, type: 3}
+  m_Name: Unit Idle
+  m_EditorClassIdentifier: 
+  AnimationFPS: 5
+  Animations:
+  - Name: Idle
+    ClipName: 5
+    Meshes:
+    - {fileID: 4300000, guid: 2e071ee5dc87575428df979eb48b38cb, type: 2}
+    - {fileID: 4300000, guid: 1106a722be35e164aa7d8e864733b5f1, type: 2}
+    - {fileID: 4300000, guid: f230013fa5a2ce64aa12b97d38c38684, type: 2}
+    - {fileID: 4300000, guid: 197cdffc60b443e41a0087cc91794ad6, type: 2}
+    - {fileID: 4300000, guid: 17f44f4513e834f47b9d14c8b9cd7649, type: 2}
+    - {fileID: 4300000, guid: 070e321df57a0d04fb1389621f97ef76, type: 2}
+    - {fileID: 4300000, guid: 7eb264d24ef4b81488c3ee944a9f866e, type: 2}
+    - {fileID: 4300000, guid: 16f8e257cd7f4b44fa5f30e1f8812687, type: 2}
+    - {fileID: 4300000, guid: 76484bd63904bda4c94c02d8f4c6bd3e, type: 2}

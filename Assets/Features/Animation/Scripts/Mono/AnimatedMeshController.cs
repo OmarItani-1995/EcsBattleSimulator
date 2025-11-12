@@ -3,10 +3,6 @@ using UnityEngine;
 public class AnimatedMeshController : MonoBehaviour
 {
     private AnimatedMesh[] Animators;
-    private void Awake()
-    {
-        Animators = FindObjectsOfType<AnimatedMesh>();
-    }
 
     public void DeactivateAll()
     {
