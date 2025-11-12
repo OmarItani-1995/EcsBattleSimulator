@@ -12,8 +12,6 @@ public partial struct UnitAttackSystem : ISystem
 {
     private EntityQuery _query;
     private ComponentLookup<LocalTransform> _transformLookup;
-    private ComponentLookup<UnitHealthCD> _healthLookup;
-    private BufferLookup<UnitHitsTaken> _hitsTakenLookup;
     private ComponentLookup<AnimatorComponentData> _animatorLookup;
     public void OnCreate(ref SystemState state)
     {
@@ -25,8 +23,6 @@ public partial struct UnitAttackSystem : ISystem
             .Build(ref state);
         state.RequireForUpdate(_query);
         _transformLookup = state.GetComponentLookup<LocalTransform>(true);
-        _healthLookup = state.GetComponentLookup<UnitHealthCD>(false);
-        _hitsTakenLookup = state.GetBufferLookup<UnitHitsTaken>(false);
         _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(true);
         state.RequireForUpdate<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
@@ -34,8 +30,6 @@ public partial struct UnitAttackSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         _transformLookup.Update(ref state);
-        _healthLookup.Update(ref state);
-        _hitsTakenLookup.Update(ref state);
         _animatorLookup.Update(ref state);
         
         float deltaTime = SystemAPI.Time.DeltaTime;
@@ -46,7 +40,6 @@ public partial struct UnitAttackSystem : ISystem
             DeltaTime = deltaTime,
             Ecb = ecb.AsParallelWriter(),
             TransformLookup = _transformLookup,
-            HealthLookup = _healthLookup,
             AnimatorLookup = _animatorLookup
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
@@ -57,7 +50,6 @@ public partial struct UnitAttackSystem : ISystem
     {
         [ReadOnly] public float DeltaTime;
         [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
-        [ReadOnly] public ComponentLookup<UnitHealthCD> HealthLookup;
         [ReadOnly] public ComponentLookup<AnimatorComponentData> AnimatorLookup;
         public EntityCommandBuffer.ParallelWriter Ecb;
 
