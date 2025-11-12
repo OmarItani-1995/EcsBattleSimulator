@@ -7,6 +7,7 @@ using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
+[UpdateInGroup(typeof(UnitLateUpdateSystemGroup))]
 public partial struct UnitAttackSystem : ISystem
 {
     private EntityQuery _query;
@@ -27,6 +28,7 @@ public partial struct UnitAttackSystem : ISystem
         _healthLookup = state.GetComponentLookup<UnitHealthCD>(false);
         _hitsTakenLookup = state.GetBufferLookup<UnitHitsTaken>(false);
         _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(true);
+        state.RequireForUpdate<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
@@ -37,8 +39,8 @@ public partial struct UnitAttackSystem : ISystem
         _animatorLookup.Update(ref state);
         
         float deltaTime = SystemAPI.Time.DeltaTime;
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
-
+        var ecbSingleton = SystemAPI.GetSingleton<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         var job = new UnitAttackJob
         {
             DeltaTime = deltaTime,
@@ -48,9 +50,6 @@ public partial struct UnitAttackSystem : ISystem
             AnimatorLookup = _animatorLookup
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
-        state.Dependency.Complete();
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
 
     [BurstCompile]

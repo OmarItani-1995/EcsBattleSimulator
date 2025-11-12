@@ -8,8 +8,8 @@ using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
 [BurstCompile]
-[UpdateAfter(typeof(QuadrantSystem))]
 [RequireMatchingQueriesForUpdate]
+[UpdateInGroup(typeof(UnitPreUpdateSystemGroup))]
 public partial struct TargetingSystem : ISystem 
 {
     private EntityQuery playerQuery;
@@ -17,7 +17,6 @@ public partial struct TargetingSystem : ISystem
     private Random random;
     public void OnCreate(ref SystemState state)
     {
-        // random = Random.CreateFromIndex((uint) DateTime.Now.Minute);
         random = Random.CreateFromIndex(0);
         playerQuery = new EntityQueryBuilder(Allocator.Persistent) 
             .WithAll<PlayerTag>()
@@ -37,25 +36,31 @@ public partial struct TargetingSystem : ISystem
 
         state.RequireForUpdate(playerQuery);
         state.RequireForUpdate(enemyQuery);
+        state.RequireForUpdate<QuadrantMaps>();
+        state.RequireForUpdate<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
         var quadrantMaps = SystemAPI.GetSingleton<QuadrantMaps>();
+        var ecb = SystemAPI.GetSingleton<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+        
         if (playerQuery.CalculateEntityCount() > 0)
         {
-            FindTargets(playerQuery, ref quadrantMaps, ref quadrantMaps.enemyMap, ref state);
+            FindTargets(playerQuery, ref quadrantMaps, ref quadrantMaps.enemyMap, commandBuffer, ref state);
         }
 
         if (enemyQuery.CalculateEntityCount() > 0)
         {
-            FindTargets(enemyQuery, ref quadrantMaps, ref quadrantMaps.playerMap, ref state);
+            FindTargets(enemyQuery, ref quadrantMaps, ref quadrantMaps.playerMap, commandBuffer, ref state);
         }
     }
 
-    private void FindTargets(EntityQuery query, ref QuadrantMaps maps, ref NativeParallelMultiHashMap<int, QuadrantData> targets, ref SystemState state)
+    private void FindTargets(EntityQuery query, ref QuadrantMaps maps,
+        ref NativeParallelMultiHashMap<int, QuadrantData> targets, EntityCommandBuffer.ParallelWriter ecb,
+        ref SystemState state)
     {
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
         var frame = (uint)math.floor(SystemAPI.Time.ElapsedTime);
         var findTargetJob = new FindTargetJob
         {
@@ -63,14 +68,10 @@ public partial struct TargetingSystem : ISystem
             targetsMap = targets,
             Frame = frame,
             Seed = random.NextUInt(),
-            ecb = ecb.AsParallelWriter()
+            ecb = ecb,
         };
         
         state.Dependency = findTargetJob.ScheduleParallel(query, state.Dependency);
-        state.Dependency.Complete();
-
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
 
     [BurstCompile]

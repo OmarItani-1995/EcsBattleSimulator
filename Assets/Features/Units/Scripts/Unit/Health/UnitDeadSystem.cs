@@ -5,13 +5,14 @@ using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
-[UpdateInGroup(typeof(LateSimulationSystemGroup))]
+[UpdateInGroup(typeof(UnitPreUpdateSystemGroup))]
 public partial struct UnitDeadSystem : ISystem
 {
     private EntityQuery _query;
 
     public void OnCreate(ref SystemState state)
     {
+        state.RequireForUpdate<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
         _query = new EntityQueryBuilder(Allocator.Persistent)
             .WithAll<UnitDeadCD>()
             .Build(ref state);
@@ -20,16 +21,14 @@ public partial struct UnitDeadSystem : ISystem
 
     public void OnUpdate(ref SystemState state)
     {
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var ecb = SystemAPI.GetSingleton<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         var job = new UnitDeadJob
         {
             DeltaTime = SystemAPI.Time.DeltaTime,
-            Ecb = ecb.AsParallelWriter()
+            Ecb = commandBuffer
         };
         state.Dependency = job.Schedule(state.Dependency);
-        state.Dependency.Complete();
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
     
     [BurstCompile]

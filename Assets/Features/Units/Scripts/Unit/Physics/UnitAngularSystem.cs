@@ -7,6 +7,7 @@ using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup), OrderLast = true)]
 public partial struct UnitAngularSystem : ISystem
 {
     private EntityQuery _query;

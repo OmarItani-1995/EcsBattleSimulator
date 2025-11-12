@@ -6,6 +6,7 @@ using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
+[UpdateInGroup(typeof(UnitPreUpdateSystemGroup))]
 public partial struct UnitAnimatorInitializerSystem : ISystem
 {
     private EntityQuery _query;
@@ -22,13 +23,16 @@ public partial struct UnitAnimatorInitializerSystem : ISystem
         
         _childLookup = state.GetBufferLookup<Child>(true);
         _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(true);
+        state.RequireForUpdate<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
     public void OnUpdate(ref SystemState state)
     {
         _childLookup.Update(ref state);
         _animatorLookup.Update(ref state);
         
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var ecbSingleton = SystemAPI.GetSingleton<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+        
         var job = new UnitAnimatorInitializerJob
         {
             Ecb = ecb.AsParallelWriter(),
@@ -36,9 +40,6 @@ public partial struct UnitAnimatorInitializerSystem : ISystem
             AnimatorLookup = _animatorLookup
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
-        state.Dependency.Complete();
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
     
     [BurstCompile]

@@ -7,7 +7,7 @@ using UnityEngine.Serialization;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
-[UpdateBefore(typeof(TransformSystemGroup))]
+[UpdateInGroup(typeof(UnitPreUpdateSystemGroup))]
 public partial struct TargetValidatorSystem : ISystem
 {
     private EntityQuery _query;
@@ -17,22 +17,20 @@ public partial struct TargetValidatorSystem : ISystem
         _query = state.GetEntityQuery(typeof(UnitTargetCD));
         state.RequireForUpdate(_query);
         _UnitAliveStateLookup = state.GetComponentLookup<UnitAliveState>(true);
+        state.RequireForUpdate<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
         _UnitAliveStateLookup.Update(ref state);
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var ecb = SystemAPI.GetSingleton<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         var job = new TargetValidatorJob
         {
-            Ecb = ecb.AsParallelWriter(),
+            Ecb = commandBuffer,
             AliveStateLookUp = _UnitAliveStateLookup
         };
         state.Dependency = job.Schedule(state.Dependency);
-        state.Dependency.Complete();
-
-        ecb.Playback(state.EntityManager);  
-        ecb.Dispose();
     }
     
     [BurstCompile]

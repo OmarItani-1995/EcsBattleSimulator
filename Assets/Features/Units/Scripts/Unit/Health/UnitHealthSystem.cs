@@ -5,6 +5,8 @@ using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
+[UpdateInGroup(typeof(UnitLateUpdateSystemGroup), OrderLast = true)]
+[UpdateBefore(typeof(UnitLateUpdateEndSimulationEntityCommandBufferSystem))]
 public partial struct UnitHealthSystem : ISystem
 {
     private const float deathDuration = 5f;
@@ -20,12 +22,14 @@ public partial struct UnitHealthSystem : ISystem
             .Build(ref state);
         state.RequireForUpdate(_query);
         _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(true);
+        state.RequireForUpdate<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
         _animatorLookup.Update(ref state);
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var ecbSingleton = SystemAPI.GetSingleton<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
         var job = new UnitHealthJob
         {
@@ -34,9 +38,6 @@ public partial struct UnitHealthSystem : ISystem
             deathDuration = deathDuration
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
-        state.Dependency.Complete();
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
     
     [BurstCompile]

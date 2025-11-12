@@ -6,6 +6,7 @@ using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
+[UpdateInGroup(typeof(WorldSystemGroup))]
 public partial struct GroupSpawnerSystem : ISystem
 {
     private EntityQuery _query;
@@ -17,21 +18,20 @@ public partial struct GroupSpawnerSystem : ISystem
             .WithAll<LocalTransform>()
             .Build(ref state);
         state.RequireForUpdate(_query);
+        state.RequireForUpdate<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
         float deltaTime = SystemAPI.Time.DeltaTime;
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var ecb = SystemAPI.GetSingleton<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         var job = new GroupSpawnerJob
         {
             DeltaTime = deltaTime,
-            Ecb = ecb.AsParallelWriter(),
+            Ecb = commandBuffer,
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
-        state.Dependency.Complete();
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
     
     [BurstCompile]

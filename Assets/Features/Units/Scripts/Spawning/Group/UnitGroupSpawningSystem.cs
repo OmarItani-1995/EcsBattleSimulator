@@ -7,50 +7,63 @@ using UnityEngine;
 
 [RequireMatchingQueriesForUpdate]
 [BurstCompile]
+[UpdateInGroup(typeof(WorldSystemGroup))]
 public partial struct UnitGroupSpawningSystem : ISystem
 {
-    private EntityQuery _active;
+    private EntityQuery _query;
     
     public void OnCreate(ref SystemState state)
     {
-        _active = SystemAPI.QueryBuilder()
+        _query = SystemAPI.QueryBuilder()
             .WithAll<UnitGroupSpawningCD, LocalTransform, UnitGroupSpawningState>()
             .Build();
         
-        state.RequireForUpdate(_active);
+        state.RequireForUpdate(_query);
+        state.RequireForUpdate<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
-
-        foreach (var (unitGroup, transform,unitState, entity) in SystemAPI
-                     .Query<RefRO<UnitGroupSpawningCD>, RefRO<LocalTransform>, RefRO<UnitGroupSpawningState>>().WithEntityAccess())
+        var ecb = SystemAPI.GetSingleton<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
+        var job = new UnitGroupSpawningJob
         {
-            var entities = new NativeArray<Entity>(unitGroup.ValueRO.Rows * unitGroup.ValueRO.Columns, Allocator.Temp);
-            state.EntityManager.Instantiate(unitGroup.ValueRO.Prefab, entities);
+            buffer = commandBuffer
+        };
+        state.Dependency = job.ScheduleParallel(_query, state.Dependency);
+    }
+    
+    [BurstCompile]
+    private partial struct UnitGroupSpawningJob : IJobEntity
+    {
+        public EntityCommandBuffer.ParallelWriter buffer;
+        public void Execute([EntityIndexInQuery] int index, Entity entity, in LocalTransform transform, in UnitGroupSpawningCD unitGroup, in UnitGroupSpawningState unitState)
+        {
+            var entities = new NativeArray<Entity>(unitGroup.Rows * unitGroup.Columns, Allocator.Temp);
+            buffer.Instantiate(index, unitGroup.Prefab, entities);
             
-            float spacing = unitGroup.ValueRO.Spacing;
-            int columns = unitGroup.ValueRO.Columns;
-            int rows = unitGroup.ValueRO.Rows;
+            float spacing = unitGroup.Spacing;
+            int columns = unitGroup.Columns;
+            int rows = unitGroup.Rows;
             
             float width = (columns - 1) * spacing;
             float height = (rows - 1) * spacing;
-            float3 topLeft = transform.ValueRO.Position - new float3(width / 2, 0, height / 2);
+            float3 topLeft = transform.Position - new float3(width / 2, 0, height / 2);
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < columns; j++)
                 {
                     float3 spawnPos = topLeft + new float3(j * spacing, 0f, i * spacing);
-                    state.EntityManager.SetComponentData(entities[i * columns + j], new LocalTransform
+                    buffer.SetComponent(index, entities[i * columns + j], new LocalTransform
                     {
                         Position = spawnPos,
-                        Rotation = transform.ValueRO.Rotation,
+                        Rotation = transform.Rotation,
                         Scale = 1f
                     });
                 }
             }
             
-            SystemAPI.SetComponentEnabled<UnitGroupSpawningState>(entity, false);
+            buffer.SetComponentEnabled<UnitGroupSpawningState>(index, entity, false);
             entities.Dispose();
         }
     }

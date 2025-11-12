@@ -8,7 +8,8 @@ using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
-public partial struct AttachCheckSystem : ISystem
+[UpdateInGroup(typeof(UnitPreUpdateSystemGroup))]
+public partial struct UnitAttackCheckSystem : ISystem
 {
     private EntityQuery _query;
     private ComponentLookup<LocalTransform> _transformLookup;
@@ -28,6 +29,7 @@ public partial struct AttachCheckSystem : ISystem
         _transformLookup = state.GetComponentLookup<LocalTransform>(true);
         _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(false);
         _aliveStateLookup = state.GetComponentLookup<UnitAliveState>(true);
+        state.RequireForUpdate<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
     
     public void OnUpdate(ref SystemState state)
@@ -36,7 +38,9 @@ public partial struct AttachCheckSystem : ISystem
         _animatorLookup.Update(ref state);
         _aliveStateLookup.Update(ref state);
         
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var ecbSingleton = SystemAPI.GetSingleton<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+        
         var job = new AttachCheckJob
         {
             Ecb = ecb.AsParallelWriter(),
@@ -45,9 +49,6 @@ public partial struct AttachCheckSystem : ISystem
             AliveStateLookup = _aliveStateLookup
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
-        state.Dependency.Complete();
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
     
     [BurstCompile]

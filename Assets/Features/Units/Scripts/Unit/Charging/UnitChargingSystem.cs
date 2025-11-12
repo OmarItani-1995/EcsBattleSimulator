@@ -8,6 +8,7 @@ using UnityEngine;
 
 [RequireMatchingQueriesForUpdate]
 [BurstCompile]
+[UpdateInGroup(typeof(UnitUpdateSystemGroup))]
 public partial struct UnitChargingSystem : ISystem
 {
     private const float StoppingMinZ = -10;
@@ -22,12 +23,13 @@ public partial struct UnitChargingSystem : ISystem
             .WithAll<LocalTransform>()
             .Build(ref state);
         state.RequireForUpdate(query);
+        state.RequireForUpdate<UnitUpdateEndSImulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);
-
+        var ecbSingleton = SystemAPI.GetSingleton<UnitUpdateEndSImulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         var job = new UnitChargingJob
         {
             DeltaTime = SystemAPI.Time.DeltaTime,
@@ -38,10 +40,6 @@ public partial struct UnitChargingSystem : ISystem
         };
         
         state.Dependency = job.ScheduleParallel(query, state.Dependency);
-        state.Dependency.Complete();
-        
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
 
     [BurstCompile]

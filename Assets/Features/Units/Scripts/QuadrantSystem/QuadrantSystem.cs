@@ -7,6 +7,7 @@ using Unity.Transforms;
 using UnityEngine;
 
 [BurstCompile]
+[UpdateInGroup(typeof(WorldSystemGroup))]
 public partial struct QuadrantSystem : ISystem
 {
     private const int ZMultiplier = 1000;
@@ -73,8 +74,8 @@ public partial struct QuadrantSystem : ISystem
         {
             HashMap = map.AsParallelWriter()
         };
-        JobHandle jobHandle = job.ScheduleParallel(query, state.Dependency);
-        jobHandle.Complete();
+        state.Dependency = job.ScheduleParallel(query, state.Dependency);
+        state.Dependency.Complete();
     }
 
     private void ResetMap(ref NativeParallelMultiHashMap<int, QuadrantData> map, ref EntityQuery query)

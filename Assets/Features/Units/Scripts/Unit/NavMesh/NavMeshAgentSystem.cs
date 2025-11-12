@@ -6,7 +6,7 @@ using Unity.Transforms;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
-[UpdateInGroup(typeof(TransformSystemGroup))]
+[UpdateInGroup(typeof(UnitUpdateSystemGroup))]
 public partial struct NavMeshAgentSystem : ISystem
 {
     private EntityQuery query;
@@ -24,6 +24,7 @@ public partial struct NavMeshAgentSystem : ISystem
         
         state.RequireForUpdate(query);    
         _transformLookup = state.GetComponentLookup<LocalTransform>(true);
+        state.RequireForUpdate<UnitUpdateEndSImulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
@@ -32,7 +33,8 @@ public partial struct NavMeshAgentSystem : ISystem
         
         float deltaTime = SystemAPI.Time.DeltaTime;
 
-        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var ecbSingleton = SystemAPI.GetSingleton<UnitUpdateEndSImulationEntityCommandBufferSystem.Singleton>();
+        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         
         var job = new NavMeshAgentJob
         {
@@ -41,9 +43,6 @@ public partial struct NavMeshAgentSystem : ISystem
             Ecb = ecb.AsParallelWriter()
         };
         state.Dependency = job.ScheduleParallel(query, state.Dependency);
-        state.Dependency.Complete();
-        ecb.Playback(state.EntityManager);
-        ecb.Dispose();
     }
 
     [BurstCompile]
@@ -64,8 +63,8 @@ public partial struct NavMeshAgentSystem : ISystem
             {
                 transform.Position += math.normalize(direction) * DeltaTime * agent.moveSpeed;
             }
-
-            Ecb.AddComponent(index, entity, transform);
+            
+            Ecb.SetComponent(index, entity, transform);
         }
     }
 }
