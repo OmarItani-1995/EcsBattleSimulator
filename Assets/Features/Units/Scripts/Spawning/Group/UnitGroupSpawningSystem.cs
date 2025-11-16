@@ -7,7 +7,7 @@ using Unity.Transforms;
 
 [RequireMatchingQueriesForUpdate]
 [BurstCompile]
-[UpdateInGroup(typeof(WorldSystemGroup))]
+[UpdateInGroup(typeof(UnitLateUpdateSystemGroup))]
 [StructLayout(LayoutKind.Auto)]
 public partial struct UnitGroupSpawningSystem : ISystem
 {
@@ -22,12 +22,12 @@ public partial struct UnitGroupSpawningSystem : ISystem
             .Build();
         
         state.RequireForUpdate(_query);
-        state.RequireForUpdate<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
-        var ecb = SystemAPI.GetSingleton<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         var job = new UnitGroupSpawningJob
         {

@@ -6,7 +6,7 @@ using Unity.Transforms;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
-[UpdateInGroup(typeof(WorldSystemGroup))]
+[UpdateInGroup(typeof(UnitLateUpdateSystemGroup))]
 [StructLayout(LayoutKind.Auto)]
 public partial struct GroupSpawnerSystem : ISystem
 {
@@ -19,13 +19,13 @@ public partial struct GroupSpawnerSystem : ISystem
             .WithAll<LocalTransform>()
             .Build();
         state.RequireForUpdate(_query);
-        state.RequireForUpdate<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
         float deltaTime = SystemAPI.Time.DeltaTime;
-        var ecb = SystemAPI.GetSingleton<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         var job = new GroupSpawnerJob
         {
