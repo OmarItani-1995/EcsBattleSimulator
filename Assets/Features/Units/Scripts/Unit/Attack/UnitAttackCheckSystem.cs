@@ -7,7 +7,7 @@ using Unity.Transforms;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
-[UpdateInGroup(typeof(UnitUpdateSystemGroup))]
+[UpdateInGroup(typeof(UnitLateUpdateSystemGroup))]
 [StructLayout(LayoutKind.Auto)]
 public partial struct UnitAttackCheckSystem : ISystem
 {
@@ -23,13 +23,13 @@ public partial struct UnitAttackCheckSystem : ISystem
             .WithAll<UnitAnimatorCD>()
             .WithAll<LocalToWorld>()
             .WithAll<UnitAliveState>()
-            .WithNone<UnitAttackCD>()
+            .WithDisabled<UnitAttackCD>()
             .Build();
         state.RequireForUpdate(_query);
         _transformLookup = state.GetComponentLookup<LocalTransform>(true);
         _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(false);
         _aliveStateLookup = state.GetComponentLookup<UnitAliveState>(true);
-        state.RequireForUpdate<UnitUpdateEndSImulationEntityCommandBufferSystem.Singleton>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
     
     public void OnUpdate(ref SystemState state)
@@ -38,7 +38,7 @@ public partial struct UnitAttackCheckSystem : ISystem
         _animatorLookup.Update(ref state);
         _aliveStateLookup.Update(ref state);
         
-        var ecbSingleton = SystemAPI.GetSingleton<UnitUpdateEndSImulationEntityCommandBufferSystem.Singleton>();
+        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         
         var job = new AttachCheckJob
@@ -61,7 +61,7 @@ public partial struct UnitAttackCheckSystem : ISystem
         [ReadOnly] public ComponentLookup<UnitAliveState> AliveStateLookup;
 
         private void Execute([ChunkIndexInQuery] int index, Entity entity, in UnitTargetCD target, in UnitAttackInfoSD attackInfo,
-            in LocalToWorld transform, in UnitAnimatorCD animatorHolder)
+            in LocalToWorld transform, in UnitAnimatorCD animatorHolder, ref UnitAttackCD attack)
         {
             float distance = math.distance(transform.Position, TransformLookup[target.targetEntity].Position);
             if (distance <= attackInfo.attackRange)
@@ -69,7 +69,7 @@ public partial struct UnitAttackCheckSystem : ISystem
                 var animator = AnimatorLookUp[animatorHolder.AnimatorEntity];
                 if (!AliveStateLookup.IsComponentEnabled(target.targetEntity))
                 {
-                    Ecb.RemoveComponent<UnitAttackCD>(index, entity);
+                    Ecb.SetComponentEnabled<UnitAttackCD>(index, entity, false);
                     Ecb.RemoveComponent<UnitTargetCD>(index, entity);
                     animator.currentClip = AnimationClipName.Charing_Run;
                     animator.currentTick = 0;
@@ -82,14 +82,12 @@ public partial struct UnitAttackCheckSystem : ISystem
                 animator.loop = false;
                 
                 Ecb.AddComponent(index, animatorHolder.AnimatorEntity, animator);
-                
-                Ecb.AddComponent(index, entity, new UnitAttackCD()
-                {
-                    AttackTime = attackInfo.attackTime,
-                    TotalTime = attackInfo.attackTotalTime,
-                    DidAttack = false,
-                    AttackDamage = attackInfo.attackDamage
-                });   
+
+                attack.AttackTime = attackInfo.attackTime;
+                attack.TotalTime = attackInfo.attackTotalTime;
+                attack.DidAttack = false;
+                attack.AttackDamage = attackInfo.attackDamage;
+                Ecb.SetComponentEnabled<UnitAttackCD>(index, entity, true);
             }
         }
     }
