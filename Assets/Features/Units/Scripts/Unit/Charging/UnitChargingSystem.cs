@@ -1,7 +1,7 @@
+using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -9,20 +9,22 @@ using UnityEngine;
 [RequireMatchingQueriesForUpdate]
 [BurstCompile]
 [UpdateInGroup(typeof(UnitUpdateSystemGroup))]
+[StructLayout(LayoutKind.Auto)]
 public partial struct UnitChargingSystem : ISystem
 {
     private const float StoppingMinZ = -10;
     private const float StoppingMaxZ = 10;
     
-    private EntityQuery query;
+    private EntityQuery _query;
     public void OnCreate(ref SystemState state)
     {
-        query = new EntityQueryBuilder(Allocator.Persistent)
+        _query = SystemAPI.QueryBuilder()
             .WithAll<UnitChargingState>()
             .WithAll<UnitChargingCD>()
+            .WithAll<UnitAliveState>()
             .WithAll<LocalTransform>()
-            .Build(ref state);
-        state.RequireForUpdate(query);
+            .Build();
+        state.RequireForUpdate(_query);
         state.RequireForUpdate<UnitUpdateEndSImulationEntityCommandBufferSystem.Singleton>();
     }
 
@@ -39,10 +41,11 @@ public partial struct UnitChargingSystem : ISystem
             MaxDistance = 50f,
         };
         
-        state.Dependency = job.ScheduleParallel(query, state.Dependency);
+        state.Dependency = job.ScheduleParallel(_query, state.Dependency);
     }
 
     [BurstCompile]
+    [StructLayout(LayoutKind.Auto)]
     private partial struct UnitChargingJob : IJobEntity
     {
         [ReadOnly] public float DeltaTime;
@@ -51,8 +54,8 @@ public partial struct UnitChargingSystem : ISystem
         [ReadOnly] public float MaxDistance;
         
         public EntityCommandBuffer.ParallelWriter buffer;
-        
-        public void Execute([EntityIndexInQuery] int entityIndex, Entity entity, ref LocalTransform transform, in UnitChargingCD unitCharge)
+
+        private void Execute([EntityIndexInQuery] int entityIndex, Entity entity, ref LocalTransform transform, in UnitChargingCD unitCharge)
         {
             if (unitCharge.MinSpeed == 0)
             {
@@ -60,10 +63,10 @@ public partial struct UnitChargingSystem : ISystem
                 return;
             }
 
-            float signedDeltaZ = transform.Position.z;
-            float absDist = Mathf.Abs(signedDeltaZ);
-            float t = 1- math.clamp(absDist / MaxDistance, 0, 1);
-            float speed = math.lerp(unitCharge.MinSpeed, unitCharge.MaxSpeed, math.clamp(t * t, 0 , 1));
+            var signedDeltaZ = transform.Position.z;
+            var absDist = Mathf.Abs(signedDeltaZ);
+            var t = 1- math.clamp(absDist / MaxDistance, 0, 1);
+            var speed = math.lerp(unitCharge.MinSpeed, unitCharge.MaxSpeed, math.clamp(t * t, 0 , 1));
             transform.Position += unitCharge.Direction * speed * DeltaTime;
             if (transform.Position.z >= Min && transform.Position.z <= Max)
             {

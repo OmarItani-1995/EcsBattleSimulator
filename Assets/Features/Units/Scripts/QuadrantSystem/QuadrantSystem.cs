@@ -1,55 +1,48 @@
+using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 
 [BurstCompile]
 [UpdateInGroup(typeof(WorldSystemGroup))]
+[StructLayout(LayoutKind.Auto)]
 public partial struct QuadrantSystem : ISystem
 {
     private const int ZMultiplier = 1000;
     private const int CellSize = 10;
 
-    private EntityQuery _active;
-    
-    public NativeParallelMultiHashMap<int, QuadrantData> playerMap;
-    public NativeParallelMultiHashMap<int, QuadrantData> enemyMap;
+    private NativeParallelMultiHashMap<int, QuadrantData> playerMap;
+    private NativeParallelMultiHashMap<int, QuadrantData> enemyMap;
     private EntityQuery playerQuery;
     private EntityQuery enemyQuery;
 
     public void OnCreate(ref SystemState state)
     {
-        _active = SystemAPI.QueryBuilder()
-            .WithDisabled<UnitChargingState>()
-            .Build();
-        
         playerMap = new NativeParallelMultiHashMap<int, QuadrantData>(0, Allocator.Persistent);
         enemyMap = new NativeParallelMultiHashMap<int, QuadrantData>(0, Allocator.Persistent);
-        
-        
-        EntityQueryBuilder pbuilder = new EntityQueryBuilder(Allocator.Temp)
+
+
+        playerQuery = SystemAPI.QueryBuilder()
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
             .WithAll<PlayerTag>()
-            .WithDisabled<UnitChargingState>();
+            .WithDisabled<UnitChargingState>()
+            .Build();
         
-        EntityQueryBuilder ebuilder = new EntityQueryBuilder(Allocator.Temp)
+        enemyQuery = SystemAPI.QueryBuilder()
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
             .WithAll<EnemyTag>()
-            .WithDisabled<UnitChargingState>();
-        
-        playerQuery = state.GetEntityQuery(in pbuilder);
-        enemyQuery = state.GetEntityQuery(in ebuilder);
+            .WithDisabled<UnitChargingState>()
+            .Build();
 
         var e = state.EntityManager.CreateEntity(typeof(QuadrantMaps));
         state.EntityManager.SetComponentData(e, new QuadrantMaps()
         {
-            playerMap = playerMap,
-            enemyMap = enemyMap,
+            PlayerMap = playerMap,
+            EnemyMap = enemyMap,
             CellSize = CellSize,
             ZMultiplier = ZMultiplier
         });
@@ -62,10 +55,6 @@ public partial struct QuadrantSystem : ISystem
 
         ScheduleJob(ref state, ref playerQuery, ref playerMap);
         ScheduleJob(ref state, ref enemyQuery, ref enemyMap);
-
-        // var singleton = SystemAPI.GetSingletonRW<QuadrantMaps>();
-        // singleton.ValueRW.playerMap = playerMap;
-        // singleton.ValueRW.enemyMap = enemyMap;
     }
 
     private void ScheduleJob(ref SystemState state, ref EntityQuery query, ref NativeParallelMultiHashMap<int, QuadrantData> map)
@@ -81,7 +70,7 @@ public partial struct QuadrantSystem : ISystem
     private void ResetMap(ref NativeParallelMultiHashMap<int, QuadrantData> map, ref EntityQuery query)
     {
         map.Clear();
-        int estimatedUnitCount = query.CalculateEntityCount();
+        var estimatedUnitCount = query.CalculateEntityCount();
         if (map.Capacity < estimatedUnitCount)
         {
             map.Capacity = estimatedUnitCount;
@@ -95,46 +84,27 @@ public partial struct QuadrantSystem : ISystem
     }
 
     [BurstCompile]
+    [StructLayout(LayoutKind.Auto)]
     private partial struct SetQuadrantDataHashMapJob : IJobEntity
     {
         public NativeParallelMultiHashMap<int, QuadrantData>.ParallelWriter HashMap;
-        public void Execute(Entity entity, in LocalTransform transform)
+
+        private void Execute(Entity entity, in LocalTransform transform)
         {
             int hashMapKey = (int) (math.floor(transform.Position.x / CellSize) + (ZMultiplier * math.floor(transform.Position.z / CellSize)));
             HashMap.Add(hashMapKey, new QuadrantData()
             {
-                entity = entity,
-                position = transform.Position
+                Entity = entity,
+                Position = transform.Position
             });            
         }
-    }
-    
-    private int GetPositionHashMapKey(float3 position)
-    {
-        return (int) (math.floor(position.x / CellSize) + (ZMultiplier * math.floor(position.z / CellSize)));
-    }
-
-    private int GetEntityCountInHashMap(NativeParallelMultiHashMap<int, QuadrantData> hashMap, int hashKey)
-    {
-        QuadrantData data;
-        NativeParallelMultiHashMapIterator<int> iterator;
-        int count = 0;
-        if (hashMap.TryGetFirstValue(hashKey, out data, out iterator))
-        {
-            do
-            {
-                count++;
-            } while (hashMap.TryGetNextValue(out data, ref iterator));
-        }
-
-        return count;
     }
 }
 
 public struct QuadrantData
 {
-    public Entity entity;
-    public float3 position;
+    public Entity Entity;
+    public float3 Position;
 }
 
 public struct QuadrantMaps : IComponentData
@@ -142,8 +112,8 @@ public struct QuadrantMaps : IComponentData
     [ReadOnly] public int ZMultiplier;
     [ReadOnly] public int CellSize;
     
-    [ReadOnly] public NativeParallelMultiHashMap<int, QuadrantData> playerMap;
-    [ReadOnly] public NativeParallelMultiHashMap<int, QuadrantData> enemyMap;
+    [ReadOnly] public NativeParallelMultiHashMap<int, QuadrantData> PlayerMap;
+    [ReadOnly] public NativeParallelMultiHashMap<int, QuadrantData> EnemyMap;
     
     public int GetPositionHashMapKey(float3 position)
     {
@@ -169,11 +139,11 @@ public struct QuadrantMaps : IComponentData
     {
         if (typeof(T) == typeof(PlayerTag))
         {
-            return playerMap;
+            return PlayerMap;
         }
         else
         {
-            return enemyMap;
+            return EnemyMap;
         }
     }
 }

@@ -1,12 +1,13 @@
+using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
-using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
 [UpdateInGroup(typeof(UnitPreUpdateSystemGroup))]
+[StructLayout(LayoutKind.Auto)]
 public partial struct UnitAnimatorInitializerSystem : ISystem
 {
     private EntityQuery _query;
@@ -15,10 +16,10 @@ public partial struct UnitAnimatorInitializerSystem : ISystem
     
     public void OnCreate(ref SystemState state)
     {
-        _query = new EntityQueryBuilder(Allocator.Persistent)
+        _query = SystemAPI.QueryBuilder()
             .WithAll<UnitTag>()
             .WithNone<UnitAnimatorCD>()
-            .Build(ref state);
+            .Build();
         state.RequireForUpdate(_query);
         
         _childLookup = state.GetBufferLookup<Child>(true);
@@ -43,19 +44,20 @@ public partial struct UnitAnimatorInitializerSystem : ISystem
     }
     
     [BurstCompile]
+    [StructLayout(LayoutKind.Auto)]
     private partial struct UnitAnimatorInitializerJob : IJobEntity
     {
-        public EntityCommandBuffer.ParallelWriter Ecb;
         [ReadOnly] public BufferLookup<Child> ChildLookup;
         [ReadOnly] public ComponentLookup<AnimatorComponentData> AnimatorLookup;
-        
-        public void Execute([ChunkIndexInQuery] int index, Entity entity)
+        public EntityCommandBuffer.ParallelWriter Ecb;
+
+        private void Execute([ChunkIndexInQuery] int index, Entity entity)
         {
             if (!ChildLookup.HasBuffer(entity)) return;
             var children = ChildLookup[entity];
-            for (int i = 0; i < children.Length; i++)
+            foreach (var child in children)
             {
-                if (CheckRecursive(index, entity, children[i]))
+                if (CheckRecursive(index, entity, child))
                 {
                     break;
                 }

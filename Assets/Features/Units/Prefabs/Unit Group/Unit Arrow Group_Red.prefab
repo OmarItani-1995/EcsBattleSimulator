@@ -9,12 +9,24 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -8597880020618917545, guid: 9a7135a707b00ab49bdcfd4d472a06f0, type: 3}
+      propertyPath: Rows
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: -8597880020618917545, guid: 9a7135a707b00ab49bdcfd4d472a06f0, type: 3}
       propertyPath: Prefab
       value: 
       objectReference: {fileID: 4324021990263308171, guid: dc38b6685f436d7498e3ec79d462359d, type: 3}
+    - target: {fileID: -8597880020618917545, guid: 9a7135a707b00ab49bdcfd4d472a06f0, type: 3}
+      propertyPath: Columns
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: -8597880020618917545, guid: 9a7135a707b00ab49bdcfd4d472a06f0, type: 3}
+      propertyPath: Spacing
+      value: 1.5
+      objectReference: {fileID: 0}
     - target: {fileID: 2183076980203360964, guid: 9a7135a707b00ab49bdcfd4d472a06f0, type: 3}
       propertyPath: m_Name
-      value: Unit Arrow_Blue Variant
+      value: Unit Arrow Group_Red
       objectReference: {fileID: 0}
     - target: {fileID: 3509610743967000354, guid: 9a7135a707b00ab49bdcfd4d472a06f0, type: 3}
       propertyPath: m_LocalPosition.x

@@ -15,8 +15,8 @@ public class UnitAttackAuthoring : MonoBehaviour
 
 public struct UnitAttackCD : IComponentData
 {
-    public float totalTime;
-    public float attackTime;
-    public bool didAttack;
-    public int attackDamage;
+    public float TotalTime;
+    public float AttackTime;
+    public bool DidAttack;
+    public int AttackDamage;
 }

@@ -1,15 +1,15 @@
-using System;
+using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
 [UpdateInGroup(typeof(UnitPreUpdateSystemGroup))]
+[StructLayout(LayoutKind.Auto)]
 public partial struct TargetingSystem : ISystem 
 {
     private EntityQuery playerQuery;
@@ -18,21 +18,21 @@ public partial struct TargetingSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         random = Random.CreateFromIndex(0);
-        playerQuery = new EntityQueryBuilder(Allocator.Persistent) 
+        playerQuery = SystemAPI.QueryBuilder()
             .WithAll<PlayerTag>()
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
             .WithNone<UnitTargetCD>()
             .WithDisabled<UnitChargingState>()
-            .Build(ref state);
+            .Build();
         
-        enemyQuery = new EntityQueryBuilder(Allocator.Persistent) 
+        enemyQuery = SystemAPI.QueryBuilder()
             .WithAll<EnemyTag>()
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
             .WithNone<UnitTargetCD>()
             .WithDisabled<UnitChargingState>()
-            .Build(ref state);
+            .Build();
 
         state.RequireForUpdate(playerQuery);
         state.RequireForUpdate(enemyQuery);
@@ -48,12 +48,12 @@ public partial struct TargetingSystem : ISystem
         
         if (playerQuery.CalculateEntityCount() > 0)
         {
-            FindTargets(playerQuery, ref quadrantMaps, ref quadrantMaps.enemyMap, commandBuffer, ref state);
+            FindTargets(playerQuery, ref quadrantMaps, ref quadrantMaps.EnemyMap, commandBuffer, ref state);
         }
 
         if (enemyQuery.CalculateEntityCount() > 0)
         {
-            FindTargets(enemyQuery, ref quadrantMaps, ref quadrantMaps.playerMap, commandBuffer, ref state);
+            FindTargets(enemyQuery, ref quadrantMaps, ref quadrantMaps.PlayerMap, commandBuffer, ref state);
         }
     }
 
@@ -75,6 +75,7 @@ public partial struct TargetingSystem : ISystem
     }
 
     [BurstCompile]
+    [StructLayout(LayoutKind.Auto)]
     private partial struct FindTargetJob : IJobEntity
     {
         [ReadOnly] public QuadrantMaps quadrantMaps;
@@ -83,16 +84,16 @@ public partial struct TargetingSystem : ISystem
         [ReadOnly] public uint Seed;
         
         public EntityCommandBuffer.ParallelWriter ecb;
-        
-        public void Execute([EntityIndexInQuery] int entityInQueryIndex, Entity entity, in LocalTransform transform)
+
+        private void Execute([EntityIndexInQuery] int index, Entity entity, in LocalTransform transform)
         {
             int hashMapKey = quadrantMaps.GetPositionHashMapKey(transform.Position);
-            NativeArray<int> neighborKeys = quadrantMaps.GetNeighborHashMapKeys(hashMapKey);
-            NativeArray<QuadrantData> foundTargets = new NativeArray<QuadrantData>(10, Allocator.Temp);
-            int foundCount = 0;
-            for (int i = 0; i < neighborKeys.Length; i++)
+            var neighborKeys = quadrantMaps.GetNeighborHashMapKeys(hashMapKey);
+            var foundTargets = new NativeArray<QuadrantData>(10, Allocator.Temp);
+            var foundCount = 0;
+            foreach (var key in neighborKeys)
             {
-                FindClosestTarget(in transform, neighborKeys[i], ref foundTargets, ref foundCount);
+                FindClosestTarget(key, ref foundTargets, ref foundCount);
                 if (foundCount >= 5)
                 {
                     break;
@@ -101,17 +102,17 @@ public partial struct TargetingSystem : ISystem
 
             if (foundCount > 0)
             {
-                uint h = math.hash(new uint3((uint)entityInQueryIndex, (uint)Frame, Seed));
-                int idx = (int)(h % (uint)foundCount);
+                var h = math.hash(new uint3((uint)index, Frame, Seed));
+                var idx = (int)(h % (uint)foundCount);
                 
-                ecb.AddComponent(entityInQueryIndex, entity, new UnitTargetCD
+                ecb.AddComponent(index, entity, new UnitTargetCD
                 {
-                    targetEntity = foundTargets[idx].entity,
+                    targetEntity = foundTargets[idx].Entity,
                 });
 
                 if (idx % 2 == 0)
                 {
-                    ecb.AddComponent(entityInQueryIndex, foundTargets[idx].entity, new UnitTargetCD()
+                    ecb.AddComponent(index, foundTargets[idx].Entity, new UnitTargetCD()
                     {
                         targetEntity = entity,
                     });
@@ -122,23 +123,15 @@ public partial struct TargetingSystem : ISystem
             foundTargets.Dispose();
         }
 
-        private void FindClosestTarget(in LocalTransform transform, int hashMapKey, ref NativeArray<QuadrantData> foundTargets, ref int foundCount)
+        private void FindClosestTarget(int hashMapKey, ref NativeArray<QuadrantData> foundTargets, ref int foundCount)
         {
-            if (targetsMap.TryGetFirstValue(hashMapKey, out QuadrantData targetData,
-                    out NativeParallelMultiHashMapIterator<int> iterator))
+            if (!targetsMap.TryGetFirstValue(hashMapKey, out var targetData,
+                    out var iterator)) return;
+            do
             {
-                do
-                {
-                    // float distance = math.distance(transform.Position, targetData.position);
-                    // if (closestDistance == 0 || distance < closestDistance)
-                    // {
-                    //     closestDistance = distance;
-                    //     closestTarget = targetData;
-                    // }
-                    foundTargets[foundCount] = targetData;
-                    foundCount = foundCount + 1;
-                } while (foundCount < foundTargets.Length && targetsMap.TryGetNextValue(out targetData, ref iterator));
-            }
+                foundTargets[foundCount] = targetData;
+                foundCount = foundCount + 1;
+            } while (foundCount < foundTargets.Length && targetsMap.TryGetNextValue(out targetData, ref iterator));
         }
     }
 }

@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -10,40 +9,38 @@ using UnityEngine.Rendering;
 [BurstCompile]
 public partial class AnimationClipSystem : SystemBase
 {
-    public NativeHashMap<int, BlobAssetReference<AnimationClipData>> clipData;
+    private NativeHashMap<int, BlobAssetReference<AnimationClipData>> _clipData;
     private EntityQuery _query;
     protected override void OnStartRunning()
     {
         var entitiesGraphicsSystem = World.GetOrCreateSystemManaged<EntitiesGraphicsSystem>();
         var originalClips = Resources.LoadAll<AnimatedMeshScriptableObject>("");
         int totalClipCounts = 0;
-        for (int i = 0; i < originalClips.Length; i++)
+        foreach (var clip in originalClips)
         {
-            totalClipCounts += originalClips[i].Animations.Count;
+            totalClipCounts += clip.Animations.Count;
         }
 
-        clipData = new NativeHashMap<int, BlobAssetReference<AnimationClipData>>(totalClipCounts, Allocator.Persistent);
+        _clipData = new NativeHashMap<int, BlobAssetReference<AnimationClipData>>(totalClipCounts, Allocator.Persistent);
 
         
-        for (int i = 0; i < originalClips.Length; i++)
+        foreach (var clipHolder in originalClips)
         {
-            var clipHolder = originalClips[i];
-            for (int j = 0; j < clipHolder.Animations.Count; j++)
+            foreach (var animation in clipHolder.Animations)
             {
-                var animation = clipHolder.Animations[j];
                 var blobBuilder = new BlobBuilder(Allocator.Temp);
                 ref var root = ref blobBuilder.ConstructRoot<AnimationClipData>();
-                var meshIDs = blobBuilder.Allocate(ref root.meshIndices, animation.Meshes.Count);
-                for (int k = 0; k < animation.Meshes.Count; k++)
+                var meshIDs = blobBuilder.Allocate(ref root.MeshIndices, animation.Meshes.Count);
+                for (var k = 0; k < animation.Meshes.Count; k++)
                 {
                     var mesh = animation.Meshes[k];
                     meshIDs[k] = entitiesGraphicsSystem.RegisterMesh(mesh);
                 }
-                root.clipName = animation.ClipName;
-                root.animationFPS = originalClips[i].AnimationFPS;
+                root.ClipName = animation.ClipName;
+                root.AnimationFPS = clipHolder.AnimationFPS;
                 var blob = blobBuilder.CreateBlobAssetReference<AnimationClipData>(Allocator.Persistent);
                 blobBuilder.Dispose();
-                clipData.Add((int) animation.ClipName, blob);
+                _clipData.Add((int) animation.ClipName, blob);
             }
         }
 
@@ -55,7 +52,11 @@ public partial class AnimationClipSystem : SystemBase
 
     protected override void OnDestroy()
     {
-        clipData.Dispose();
+        foreach (var kvp in _clipData)
+        {
+            kvp.Value.Dispose();
+        }
+        _clipData.Dispose();
     }
 
     protected override void OnUpdate()
@@ -65,24 +66,26 @@ public partial class AnimationClipSystem : SystemBase
         var job = new AnimationClipJob
         {
             time = time,
-            clipData = clipData
+            clipData = _clipData
         };
         this.Dependency = job.ScheduleParallel(_query, this.Dependency);
     }
     
     [BurstCompile]
+    [StructLayout(LayoutKind.Auto)]
     private partial struct AnimationClipJob : IJobEntity
     {
         [ReadOnly] public double time;
         [ReadOnly] public NativeHashMap<int, BlobAssetReference<AnimationClipData>> clipData;
-        public void Execute(ref AnimatorComponentData animator, ref MaterialMeshInfo materialMesh)
+
+        private void Execute(ref AnimatorComponentData animator, ref MaterialMeshInfo materialMesh)
         {
             var currentClip = clipData[(int)animator.currentClip];
-            materialMesh.MeshID = currentClip.Value.meshIndices[animator.currentTick];
+            materialMesh.MeshID = currentClip.Value.MeshIndices[animator.currentTick];
             
-            if (time >= animator.lastTickTime + 1f / (currentClip.Value.animationFPS))
+            if (time >= animator.lastTickTime + 1f / (currentClip.Value.AnimationFPS))
             {
-                if (animator.currentTick+1 >= currentClip.Value.meshIndices.Length)
+                if (animator.currentTick+1 >= currentClip.Value.MeshIndices.Length)
                 {
                     if (animator.loop)
                     {
@@ -101,9 +104,9 @@ public partial class AnimationClipSystem : SystemBase
 
 public struct AnimationClipData
 {
-    public int animationFPS;
-    public AnimationClipName clipName;
-    public BlobArray<BatchMeshID> meshIndices;
+    public int AnimationFPS;
+    public AnimationClipName ClipName;
+    public BlobArray<BatchMeshID> MeshIndices;
 }
 
 public enum AnimationClipName

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5488282783905232583}
   - component: {fileID: 3959280195024264418}
   - component: {fileID: 4232330058830796013}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -242,7 +242,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   groupToSpawn: {fileID: 0}
-  SpawnInterval: 10
+  SpawnInterval: 6
 --- !u!1 &8450821315616321472
 GameObject:
   m_ObjectHideFlags: 0

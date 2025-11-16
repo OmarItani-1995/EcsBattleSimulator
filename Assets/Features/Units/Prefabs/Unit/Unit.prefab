@@ -9,12 +9,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8341543982536432927}
-  - component: {fileID: 7970031717911406395}
   - component: {fileID: 8918808980104382779}
   - component: {fileID: 5960406552381201414}
   - component: {fileID: 7751031324811710628}
-  - component: {fileID: 194739379485853633}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Unit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37,29 +35,6 @@ Transform:
   - {fileID: 332173431464481169}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!136 &7970031717911406395
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4549055039892621573}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &8918808980104382779
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -97,33 +72,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2709fe5b23e69e46a096f01ef0bc53b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!54 &194739379485853633
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4549055039892621573}
-  serializedVersion: 4
-  m_Mass: 50
-  m_Drag: 50
-  m_AngularDrag: 50
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 116
-  m_CollisionDetection: 0
 --- !u!1 &5296112130810827954
 GameObject:
   m_ObjectHideFlags: 0
@@ -136,7 +84,7 @@ GameObject:
   - component: {fileID: 7512524914278053989}
   - component: {fileID: 2515643315493250652}
   - component: {fileID: 2644428576977774325}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -234,7 +182,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 332173431464481169}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Model
   m_TagString: Untagged
   m_Icon: {fileID: 0}

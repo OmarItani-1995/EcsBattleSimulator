@@ -1,22 +1,23 @@
+using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
-using UnityEngine;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
 [UpdateInGroup(typeof(WorldSystemGroup))]
+[StructLayout(LayoutKind.Auto)]
 public partial struct GroupSpawnerSystem : ISystem
 {
     private EntityQuery _query;
     
     public void OnCreate(ref SystemState state)
     {
-        _query = new EntityQueryBuilder(Allocator.Persistent)
+        _query = SystemAPI.QueryBuilder()
             .WithAll<GroupSpawnerCD>()
             .WithAll<LocalTransform>()
-            .Build(ref state);
+            .Build();
         state.RequireForUpdate(_query);
         state.RequireForUpdate<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
     }
@@ -35,19 +36,19 @@ public partial struct GroupSpawnerSystem : ISystem
     }
     
     [BurstCompile]
+    [StructLayout(LayoutKind.Auto)]
     private partial struct GroupSpawnerJob : IJobEntity
     {
         [ReadOnly] public float DeltaTime;
         public EntityCommandBuffer.ParallelWriter Ecb;
-        public void Execute([ChunkIndexInQuery] int index, Entity entity, ref GroupSpawnerCD spawner, in LocalTransform transform)
+
+        private void Execute([ChunkIndexInQuery] int index, ref GroupSpawnerCD spawner, in LocalTransform transform)
         {
             spawner.SpawnTimer -= DeltaTime;
-            if (spawner.SpawnTimer <= 0)
-            {
-                var newEntity = Ecb.Instantiate(index, spawner.groupToSpawn);
-                Ecb.SetComponent(index, newEntity, transform);
-                spawner.SpawnTimer = spawner.SpawnInterval;
-            }
+            if (!(spawner.SpawnTimer <= 0)) return;
+            var newEntity = Ecb.Instantiate(index, spawner.groupToSpawn);
+            Ecb.SetComponent(index, newEntity, transform);
+            spawner.SpawnTimer = spawner.SpawnInterval;
         }
     }
 }
