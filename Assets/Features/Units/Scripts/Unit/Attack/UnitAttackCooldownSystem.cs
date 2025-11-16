@@ -54,9 +54,9 @@ public partial struct UnitAttackCooldownSystem : ISystem
             cooldown.Elapsed = 0f;
             Ecb.SetComponentEnabled<UnitAttackCooldownState>(index, entity, false);
 
-            var animator = AnimatorLookup[animatorHolder.animatorEntity];
+            var animator = AnimatorLookup[animatorHolder.AnimatorEntity];
             animator.currentTick = 0;
-            Ecb.SetComponent(index, animatorHolder.animatorEntity, animator);
+            Ecb.SetComponent(index, animatorHolder.AnimatorEntity, animator);
         }
     }
 }

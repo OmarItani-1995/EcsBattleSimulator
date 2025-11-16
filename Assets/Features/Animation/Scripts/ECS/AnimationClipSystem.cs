@@ -44,10 +44,10 @@ public partial class AnimationClipSystem : SystemBase
             }
         }
 
-        _query = new EntityQueryBuilder(Allocator.Persistent)
+        _query = SystemAPI.QueryBuilder()
             .WithAll<AnimatorComponentData>()
             .WithAll<MaterialMeshInfo>()
-            .Build(this);
+            .Build();
     }
 
     protected override void OnDestroy()

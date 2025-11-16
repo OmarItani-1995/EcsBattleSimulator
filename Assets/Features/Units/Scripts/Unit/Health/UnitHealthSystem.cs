@@ -67,12 +67,12 @@ public partial struct UnitHealthSystem : ISystem
                 deathDuration = deathDuration
             });
             
-            if (!AnimatorLookup.HasComponent(animatorHolder.animatorEntity)) return;
-            var animator = AnimatorLookup[animatorHolder.animatorEntity];
+            if (!AnimatorLookup.HasComponent(animatorHolder.AnimatorEntity)) return;
+            var animator = AnimatorLookup[animatorHolder.AnimatorEntity];
             animator.currentClip = AnimationClipName.Charging_Die;
             animator.currentTick = 0;
             animator.loop = false;
-            Ecb.SetComponent(index, animatorHolder.animatorEntity, animator);
+            Ecb.SetComponent(index, animatorHolder.AnimatorEntity, animator);
         }
     }
 }

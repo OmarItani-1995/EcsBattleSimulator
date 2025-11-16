@@ -66,7 +66,7 @@ public partial struct UnitAttackCheckSystem : ISystem
             float distance = math.distance(transform.Position, TransformLookup[target.targetEntity].Position);
             if (distance <= attackInfo.attackRange)
             {
-                var animator = AnimatorLookUp[animatorHolder.animatorEntity];
+                var animator = AnimatorLookUp[animatorHolder.AnimatorEntity];
                 if (!AliveStateLookup.IsComponentEnabled(target.targetEntity))
                 {
                     Ecb.RemoveComponent<UnitAttackCD>(index, entity);
@@ -74,14 +74,14 @@ public partial struct UnitAttackCheckSystem : ISystem
                     animator.currentClip = AnimationClipName.Charing_Run;
                     animator.currentTick = 0;
                     animator.loop = true;
-                    Ecb.SetComponent(index, animatorHolder.animatorEntity, animator);
+                    Ecb.SetComponent(index, animatorHolder.AnimatorEntity, animator);
                     return;
                 }
                 animator.currentClip = attackInfo.attackAnimation;
                 animator.currentTick = 0;
                 animator.loop = false;
                 
-                Ecb.AddComponent(index, animatorHolder.animatorEntity, animator);
+                Ecb.AddComponent(index, animatorHolder.AnimatorEntity, animator);
                 
                 Ecb.AddComponent(index, entity, new UnitAttackCD()
                 {

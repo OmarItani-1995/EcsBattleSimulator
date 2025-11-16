@@ -9,11 +9,12 @@ public class UnitAttackAuthoring : MonoBehaviour
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             AddComponent(entity, new UnitAttackCD());
+            SetComponentEnabled<UnitAttackCD>(entity, false);
         }
     }
 }
 
-public struct UnitAttackCD : IComponentData
+public struct UnitAttackCD : IComponentData, IEnableableComponent
 {
     public float TotalTime;
     public float AttackTime;

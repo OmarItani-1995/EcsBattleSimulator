@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 [BurstCompile]
-[UpdateInGroup(typeof(WorldSystemGroup))]
+[UpdateInGroup(typeof(UnitLateUpdateSystemGroup))]
 [StructLayout(LayoutKind.Auto)]
 public partial struct QuadrantSystem : ISystem
 {
@@ -17,7 +17,7 @@ public partial struct QuadrantSystem : ISystem
     private NativeParallelMultiHashMap<int, QuadrantData> enemyMap;
     private EntityQuery playerQuery;
     private EntityQuery enemyQuery;
-
+    
     public void OnCreate(ref SystemState state)
     {
         playerMap = new NativeParallelMultiHashMap<int, QuadrantData>(0, Allocator.Persistent);
@@ -52,7 +52,7 @@ public partial struct QuadrantSystem : ISystem
     {
         ResetMap(ref playerMap, ref playerQuery);
         ResetMap(ref enemyMap, ref enemyQuery);
-
+        
         ScheduleJob(ref state, ref playerQuery, ref playerMap);
         ScheduleJob(ref state, ref enemyQuery, ref enemyMap);
     }

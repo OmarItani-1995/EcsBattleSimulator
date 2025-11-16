@@ -18,7 +18,7 @@ public partial struct UnitAnimatorInitializerSystem : ISystem
     {
         _query = SystemAPI.QueryBuilder()
             .WithAll<UnitTag>()
-            .WithNone<UnitAnimatorCD>()
+            .WithDisabled<UnitAnimatorCD>()
             .Build();
         state.RequireForUpdate(_query);
         
@@ -51,28 +51,31 @@ public partial struct UnitAnimatorInitializerSystem : ISystem
         [ReadOnly] public ComponentLookup<AnimatorComponentData> AnimatorLookup;
         public EntityCommandBuffer.ParallelWriter Ecb;
 
-        private void Execute([ChunkIndexInQuery] int index, Entity entity)
+        private void Execute([ChunkIndexInQuery] int index, Entity entity, ref UnitAnimatorCD animatorHolder)
         {
             if (!ChildLookup.HasBuffer(entity)) return;
             var children = ChildLookup[entity];
             foreach (var child in children)
             {
-                if (CheckRecursive(index, entity, child))
+                if (CheckRecursive(index, entity, child, ref animatorHolder))
                 {
                     break;
                 }
             }          
         }
 
-        private bool CheckRecursive(int index, Entity entity, Child child)
+        private bool CheckRecursive(int index, Entity entity, Child child, ref UnitAnimatorCD animatorHolder)
         {
-            Check(index, entity, child);
+            if (Check(index, entity, child, ref animatorHolder))
+            {
+                return true;
+            }
             if (ChildLookup.HasBuffer(child.Value))
             {
                 var children = ChildLookup[child.Value];
                 for (int i = 0; i < children.Length; i++)
                 {
-                    if (CheckRecursive(index, entity, children[i]))
+                    if (CheckRecursive(index, entity, children[i], ref animatorHolder))
                     {
                         return true;
                     }
@@ -82,14 +85,12 @@ public partial struct UnitAnimatorInitializerSystem : ISystem
             return false;
         }
 
-        private bool Check(int index, Entity entity, Child child)
+        private bool Check(int index, Entity entity, Child child, ref UnitAnimatorCD animatorHolder)
         {
             if (AnimatorLookup.HasComponent(child.Value))
             {
-                Ecb.AddComponent(index, entity, new UnitAnimatorCD
-                {
-                    animatorEntity = child.Value,
-                });
+                animatorHolder.AnimatorEntity = child.Value;
+                Ecb.SetComponentEnabled<UnitAnimatorCD>(index, entity, true);
                 return true;
             }
 
