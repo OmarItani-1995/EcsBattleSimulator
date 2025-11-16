@@ -9,7 +9,7 @@ using Random = Unity.Mathematics.Random;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
-[UpdateInGroup(typeof(WorldSystemGroup), OrderFirst = true)]
+[UpdateInGroup(typeof(UnitLateUpdateSystemGroup), OrderFirst = true)]
 [StructLayout(LayoutKind.Auto)]
 public partial struct UnitArrowAttackSystem : ISystem
 {
@@ -27,12 +27,12 @@ public partial struct UnitArrowAttackSystem : ISystem
             .WithDisabled<UnitAttackCooldownState>()
             .Build();
         state.RequireForUpdate(_query);
-        state.RequireForUpdate<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
-        var ecbSingleton = SystemAPI.GetSingleton<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
         
         float deltaTime = SystemAPI.Time.DeltaTime;

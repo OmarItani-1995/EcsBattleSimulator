@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 
@@ -20,12 +21,15 @@ public partial struct ArrowCollisionSystem : ISystem
             .WithAll<ArrowTag>()
             .WithAll<ArrowState>()
             .WithAll<CollisionBuffer>()
+            .WithAll<PhysicsCollider>()
+            .WithAll<PhysicsVelocity>()
+            .WithAll<PhysicsMass>()
             .Build();
         state.RequireForUpdate(_query);
         _localTransformLookup = state.GetComponentLookup<LocalTransform>(true);
         _entityStorageInfoLookup = state.GetEntityStorageInfoLookup();
         
-        state.RequireForUpdate<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
@@ -33,13 +37,14 @@ public partial struct ArrowCollisionSystem : ISystem
         _localTransformLookup.Update(ref state);
         _entityStorageInfoLookup.Update(ref state);
         
-        var ecb = SystemAPI.GetSingleton<WorldSystemEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         var job = new ArrowCollisionJob
         {
             Ecb = commandBuffer,
             TransformLookup = _localTransformLookup,
-            EntityStorageInfoLookup = _entityStorageInfoLookup
+            EntityStorageInfoLookup = _entityStorageInfoLookup,
+            PhysicsWorldIndex = new PhysicsWorldIndex(1)
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
     }
@@ -50,9 +55,10 @@ public partial struct ArrowCollisionSystem : ISystem
     {
         [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
         [ReadOnly] public EntityStorageInfoLookup EntityStorageInfoLookup;
+        [ReadOnly] public PhysicsWorldIndex PhysicsWorldIndex;
         public EntityCommandBuffer.ParallelWriter Ecb;
 
-        private void Execute([ChunkIndexInQuery] int index, Entity entity, ref DynamicBuffer<CollisionBuffer> buffer)
+        private void Execute([ChunkIndexInQuery] int index, Entity entity, ref DynamicBuffer<CollisionBuffer> buffer, ref PhysicsVelocity velocity, ref PhysicsMass mass, ref PhysicsCollider collider)
         {
             if (buffer.Length == 0)
             {
@@ -69,8 +75,9 @@ public partial struct ArrowCollisionSystem : ISystem
             {
                 Ecb.AddComponent(index, entity, stickToBody);
                 Ecb.SetComponentEnabled<ArrowState>(index, entity, false);
-                Ecb.RemoveComponent<PhysicsVelocity>(index,entity);
-                Ecb.RemoveComponent<PhysicsCollider>(index, entity);
+                Ecb.SetSharedComponent(index, entity, PhysicsWorldIndex);
+                // Ecb.RemoveComponent<PhysicsVelocity>(index,entity);
+                // Ecb.RemoveComponent<PhysicsCollider>(index, entity);
             }
         }
     }

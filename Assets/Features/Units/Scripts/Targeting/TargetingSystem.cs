@@ -37,13 +37,13 @@ public partial struct TargetingSystem : ISystem
         // state.RequireForUpdate(playerQuery);
         // state.RequireForUpdate(enemyQuery);
         state.RequireForUpdate<QuadrantMaps>();
-        state.RequireForUpdate<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
         var quadrantMaps = SystemAPI.GetSingleton<QuadrantMaps>();
-        var ecb = SystemAPI.GetSingleton<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         
         FindTargets(playerQuery, ref quadrantMaps, ref quadrantMaps.EnemyMap, commandBuffer, ref state);
@@ -100,13 +100,13 @@ public partial struct TargetingSystem : ISystem
 
                 target.TargetEntity = foundTargets[idx].Entity;
                 ecb.SetComponentEnabled<UnitTargetCD>(index, entity, true);
-                // if (idx % 2 == 0)
-                // {
-                //     ecb.AddComponent(index, foundTargets[idx].Entity, new UnitTargetCD()
-                //     {
-                //         TargetEntity = entity,
-                //     });
-                // }
+                if (idx % 2 == 0)
+                {
+                    ecb.AddComponent(index, foundTargets[idx].Entity, new UnitTargetCD()
+                    {
+                        TargetEntity = entity,
+                    });
+                }
             }
             
             neighborKeys.Dispose();
