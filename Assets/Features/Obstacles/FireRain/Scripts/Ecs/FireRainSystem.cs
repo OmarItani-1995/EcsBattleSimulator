@@ -76,7 +76,7 @@ public partial struct FireRainSystem : ISystem
                         {
                             HitAmount = 100
                         });
-                        Ecb.AddComponent(index, hitEntity, new ExplosionForceCD()
+                        Ecb.AppendToBuffer(index, hitEntity, new ExplosionForceCD()
                         {
                             ForcePoint = transform.Position,
                             ForceMagnitude = 150f

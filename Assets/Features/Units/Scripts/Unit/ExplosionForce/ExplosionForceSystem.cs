@@ -22,17 +22,11 @@ public partial struct ExplosionForceSystem : ISystem
             .Build();
 
         state.RequireForUpdate(_query);
-        state.RequireForUpdate<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
-        var ecbSystem = SystemAPI.GetSingleton<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
-        var job = new ExplosionForceJob
-        {
-            Ecb = ecb.AsParallelWriter(),
-        };
+        var job = new ExplosionForceJob();
         state.Dependency = job.ScheduleParallel(state.Dependency);
     }
     
@@ -40,35 +34,35 @@ public partial struct ExplosionForceSystem : ISystem
     [StructLayout(LayoutKind.Auto)]
     private partial struct ExplosionForceJob : IJobEntity
     {
-        public EntityCommandBuffer.ParallelWriter Ecb;
-
-        private void Execute([ChunkIndexInQuery] int index, Entity entity, in LocalTransform transform, ref PhysicsVelocity velocity, in PhysicsMass mass, in ExplosionForceCD explosionForce)
+        private void Execute([ChunkIndexInQuery] int index, Entity entity, in LocalTransform transform, ref DynamicBuffer<ExplosionForceCD> explosionBuffer, ref PhysicsVelocity velocity, in PhysicsMass mass)
         {
-            var position = transform.Position;
-            var explosionPoint = explosionForce.ForcePoint;
-            var forceMagnitude = explosionForce.ForceMagnitude;
-            const float radius = 6;
+            for (int i = 0; i < explosionBuffer.Length; i++)
+            {
+                var position = transform.Position;
+                var explosionPoint = explosionBuffer[i].ForcePoint;
+                var forceMagnitude = explosionBuffer[i].ForceMagnitude;
+                const float radius = 6;
 
-            var direction = position - explosionPoint;
-            var distance = math.length(direction);
+                var direction = position - explosionPoint;
+                var distance = math.length(direction);
 
-            if (distance > 0f)
-                direction /= distance;
-            else
-                direction = new float3(0, 1, 0); 
+                if (distance > 0f)
+                    direction /= distance;
+                else
+                    direction = new float3(0, 1, 0); 
 
-            const float upwardBoost = 3f;
-            direction.y += upwardBoost;
+                const float upwardBoost = 3f;
+                direction.y += upwardBoost;
 
-            direction = math.normalize(direction);
+                direction = math.normalize(direction);
 
-            var falloff = math.saturate(1f - (distance / radius));
+                var falloff = math.saturate(1f - (distance / radius));
 
-            var impulse = direction * forceMagnitude * falloff;
+                var impulse = direction * forceMagnitude * falloff;
 
-            velocity.Linear += impulse * mass.InverseMass;
-            
-            Ecb.RemoveComponent<ExplosionForceCD>(index, entity);
+                velocity.Linear += impulse * mass.InverseMass;
+            }
+            explosionBuffer.Clear();
         }
     }
 }
