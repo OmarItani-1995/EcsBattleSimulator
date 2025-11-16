@@ -63,11 +63,11 @@ public partial struct UnitChargingAttackSystem : ISystem
             {
                 attack.DidAttack = true;
                 var transform = TransformLookup[entity];
-                var targetTransform = TransformLookup[target.targetEntity];
+                var targetTransform = TransformLookup[target.TargetEntity];
                 float distance = math.distance(transform.Position, targetTransform.Position);
                 if (distance <= 2f)
                 {
-                    Ecb.AppendToBuffer<UnitHitsTaken>(index, target.targetEntity, new UnitHitsTaken
+                    Ecb.AppendToBuffer<UnitHitsTaken>(index, target.TargetEntity, new UnitHitsTaken
                     {
                         HitAmount = attack.AttackDamage
                     });

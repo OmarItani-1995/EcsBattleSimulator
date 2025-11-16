@@ -63,14 +63,14 @@ public partial struct UnitAttackCheckSystem : ISystem
         private void Execute([ChunkIndexInQuery] int index, Entity entity, in UnitTargetCD target, in UnitAttackInfoSD attackInfo,
             in LocalToWorld transform, in UnitAnimatorCD animatorHolder, ref UnitAttackCD attack)
         {
-            float distance = math.distance(transform.Position, TransformLookup[target.targetEntity].Position);
+            float distance = math.distance(transform.Position, TransformLookup[target.TargetEntity].Position);
             if (distance <= attackInfo.attackRange)
             {
                 var animator = AnimatorLookUp[animatorHolder.AnimatorEntity];
-                if (!AliveStateLookup.IsComponentEnabled(target.targetEntity))
+                if (!AliveStateLookup.IsComponentEnabled(target.TargetEntity))
                 {
                     Ecb.SetComponentEnabled<UnitAttackCD>(index, entity, false);
-                    Ecb.RemoveComponent<UnitTargetCD>(index, entity);
+                    Ecb.SetComponentEnabled<UnitTargetCD>(index, entity, false);
                     animator.currentClip = AnimationClipName.Charing_Run;
                     animator.currentTick = 0;
                     animator.loop = true;

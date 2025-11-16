@@ -22,7 +22,7 @@ public partial struct TargetingSystem : ISystem
             .WithAll<PlayerTag>()
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
-            .WithNone<UnitTargetCD>()
+            .WithDisabled<UnitTargetCD>()
             .WithDisabled<UnitChargingState>()
             .Build();
         
@@ -30,12 +30,12 @@ public partial struct TargetingSystem : ISystem
             .WithAll<EnemyTag>()
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
-            .WithNone<UnitTargetCD>()
+            .WithDisabled<UnitTargetCD>()
             .WithDisabled<UnitChargingState>()
             .Build();
 
-        state.RequireForUpdate(playerQuery);
-        state.RequireForUpdate(enemyQuery);
+        // state.RequireForUpdate(playerQuery);
+        // state.RequireForUpdate(enemyQuery);
         state.RequireForUpdate<QuadrantMaps>();
         state.RequireForUpdate<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
@@ -46,15 +46,8 @@ public partial struct TargetingSystem : ISystem
         var ecb = SystemAPI.GetSingleton<UnitPreUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
         var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         
-        if (playerQuery.CalculateEntityCount() > 0)
-        {
-            FindTargets(playerQuery, ref quadrantMaps, ref quadrantMaps.EnemyMap, commandBuffer, ref state);
-        }
-
-        if (enemyQuery.CalculateEntityCount() > 0)
-        {
-            FindTargets(enemyQuery, ref quadrantMaps, ref quadrantMaps.PlayerMap, commandBuffer, ref state);
-        }
+        FindTargets(playerQuery, ref quadrantMaps, ref quadrantMaps.EnemyMap, commandBuffer, ref state);
+        FindTargets(enemyQuery, ref quadrantMaps, ref quadrantMaps.PlayerMap, commandBuffer, ref state);
     }
 
     private void FindTargets(EntityQuery query, ref QuadrantMaps maps,
@@ -85,7 +78,7 @@ public partial struct TargetingSystem : ISystem
         
         public EntityCommandBuffer.ParallelWriter ecb;
 
-        private void Execute([EntityIndexInQuery] int index, Entity entity, in LocalTransform transform)
+        private void Execute([EntityIndexInQuery] int index, Entity entity, in LocalTransform transform, ref UnitTargetCD target)
         {
             int hashMapKey = quadrantMaps.GetPositionHashMapKey(transform.Position);
             var neighborKeys = quadrantMaps.GetNeighborHashMapKeys(hashMapKey);
@@ -104,19 +97,16 @@ public partial struct TargetingSystem : ISystem
             {
                 var h = math.hash(new uint3((uint)index, Frame, Seed));
                 var idx = (int)(h % (uint)foundCount);
-                
-                ecb.AddComponent(index, entity, new UnitTargetCD
-                {
-                    targetEntity = foundTargets[idx].Entity,
-                });
 
-                if (idx % 2 == 0)
-                {
-                    ecb.AddComponent(index, foundTargets[idx].Entity, new UnitTargetCD()
-                    {
-                        targetEntity = entity,
-                    });
-                }
+                target.TargetEntity = foundTargets[idx].Entity;
+                ecb.SetComponentEnabled<UnitTargetCD>(index, entity, true);
+                // if (idx % 2 == 0)
+                // {
+                //     ecb.AddComponent(index, foundTargets[idx].Entity, new UnitTargetCD()
+                //     {
+                //         TargetEntity = entity,
+                //     });
+                // }
             }
             
             neighborKeys.Dispose();

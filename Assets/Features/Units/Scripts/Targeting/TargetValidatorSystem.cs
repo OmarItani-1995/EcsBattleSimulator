@@ -43,9 +43,9 @@ public partial struct TargetValidatorSystem : ISystem
 
         private void Execute([ChunkIndexInQuery] int index, Entity entity, in UnitTargetCD targetComponent)
         {
-            if (!AliveStateLookUp.IsComponentEnabled(targetComponent.targetEntity))
+            if (!AliveStateLookUp.IsComponentEnabled(targetComponent.TargetEntity))
             {
-                Ecb.RemoveComponent<UnitTargetCD>(index, entity);
+                Ecb.SetComponentEnabled<UnitTargetCD>(index, entity, false);
             }
         }
     }

@@ -21,7 +21,7 @@ public partial struct NavMeshAgentSystem : ISystem
             .WithAll<UnitTargetCD>()
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
-            .WithNone<UnitAttackCD>()
+            .WithDisabled<UnitAttackCD>()
             .Build();
         
         state.RequireForUpdate(_query);    
@@ -56,7 +56,7 @@ public partial struct NavMeshAgentSystem : ISystem
 
         private void Execute([ChunkIndexInQuery] int index, Entity entity, in NavMeshAgentCD agent, in UnitTargetCD target)
         {
-            var targetUnitPosition = TransformLookup[target.targetEntity].Position;
+            var targetUnitPosition = TransformLookup[target.TargetEntity].Position;
             var transform = TransformLookup[entity];
             var direction = targetUnitPosition - transform.Position;
             var targetPosition = targetUnitPosition - math.normalize(direction) * 0.8f;
