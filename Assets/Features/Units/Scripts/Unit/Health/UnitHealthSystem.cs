@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Physics;
 
 [BurstCompile]
 [RequireMatchingQueriesForUpdate]
@@ -20,6 +21,7 @@ public partial struct UnitHealthSystem : ISystem
             .WithAll<UnitHitsTaken>()
             .WithAll<UnitAnimatorCD>()
             .WithAll<UnitAliveState>()
+            .WithAll<PhysicsMass>()
             .Build();
         state.RequireForUpdate(_query);
         _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(true);
@@ -50,7 +52,7 @@ public partial struct UnitHealthSystem : ISystem
         public EntityCommandBuffer.ParallelWriter Ecb;
 
         private void Execute([ChunkIndexInQuery] int index, Entity entity, ref UnitHealthCD health, 
-            DynamicBuffer<UnitHitsTaken> hitsTaken, ref UnitAnimatorCD animatorHolder)
+            DynamicBuffer<UnitHitsTaken> hitsTaken, ref UnitAnimatorCD animatorHolder, ref PhysicsMass mass)
         {
             if (hitsTaken.Length == 0) return;
             
@@ -62,10 +64,11 @@ public partial struct UnitHealthSystem : ISystem
 
             if (health.CurrentHealth > 0) return;
             Ecb.SetComponentEnabled<UnitAliveState>(index, entity, false);
-            Ecb.AddComponent(index, entity, new UnitDeadCD()
-            {
-                deathDuration = deathDuration
-            });
+            
+            var inv = mass.InverseInertia;
+            inv.x = 1f;
+            inv.z = 1f;
+            mass.InverseInertia = inv;
             
             if (!AnimatorLookup.HasComponent(animatorHolder.AnimatorEntity)) return;
             var animator = AnimatorLookup[animatorHolder.AnimatorEntity];

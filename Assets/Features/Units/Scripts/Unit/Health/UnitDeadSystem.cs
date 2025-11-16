@@ -15,21 +15,22 @@ public partial struct UnitDeadSystem : ISystem
     {
         _query = SystemAPI.QueryBuilder()
             .WithAll<UnitDeadCD>()
+            .WithDisabled<UnitAliveState>()
             .Build();
         state.RequireForUpdate(_query);
-        state.RequireForUpdate<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
-        var ecb = SystemAPI.GetSingleton<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var commandBuffer = ecb.CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
         var job = new UnitDeadJob
         {
             DeltaTime = SystemAPI.Time.DeltaTime,
             Ecb = commandBuffer
         };
-        state.Dependency = job.ScheduleParallel(state.Dependency);
+        state.Dependency = job.ScheduleParallel(_query, state.Dependency);
     }
     
     [BurstCompile]
