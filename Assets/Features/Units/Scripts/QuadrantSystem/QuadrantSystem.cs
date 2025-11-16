@@ -28,14 +28,14 @@ public partial struct QuadrantSystem : ISystem
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
             .WithAll<PlayerTag>()
-            .WithDisabled<UnitChargingState>()
+            .WithDisabled<UnitChargingCD>()
             .Build();
         
         enemyQuery = SystemAPI.QueryBuilder()
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
             .WithAll<EnemyTag>()
-            .WithDisabled<UnitChargingState>()
+            .WithDisabled<UnitChargingCD>()
             .Build();
 
         var e = state.EntityManager.CreateEntity(typeof(QuadrantMaps));

@@ -19,11 +19,12 @@ public class UnitChargingAuthoring : MonoBehaviour
                 MaxSpeed = authoring.MaxSpeed,
                 Direction = authoring.Direction,
             });
+            SetComponentEnabled<UnitChargingCD>(entity, true);
         }
     }
 }
 
-public struct UnitChargingCD : IComponentData
+public struct UnitChargingCD : IComponentData, IEnableableComponent
 {
     public float MinSpeed;
     public float MaxSpeed;

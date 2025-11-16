@@ -19,7 +19,6 @@ public partial struct UnitChargingSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         _query = SystemAPI.QueryBuilder()
-            .WithAll<UnitChargingState>()
             .WithAll<UnitChargingCD>()
             .WithAll<UnitAliveState>()
             .WithAll<LocalTransform>()
@@ -59,7 +58,7 @@ public partial struct UnitChargingSystem : ISystem
         {
             if (unitCharge.MinSpeed == 0)
             {
-                buffer.SetComponentEnabled<UnitChargingState>(entityIndex, entity, false);
+                buffer.SetComponentEnabled<UnitChargingCD>(entityIndex, entity, false);
                 return;
             }
 
@@ -70,7 +69,7 @@ public partial struct UnitChargingSystem : ISystem
             transform.Position += unitCharge.Direction * speed * DeltaTime;
             if (transform.Position.z >= Min && transform.Position.z <= Max)
             {
-                buffer.SetComponentEnabled<UnitChargingState>(entityIndex, entity, false);
+                buffer.SetComponentEnabled<UnitChargingCD>(entityIndex, entity, false);
             }
         }
     }

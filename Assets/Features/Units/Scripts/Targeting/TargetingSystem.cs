@@ -23,7 +23,7 @@ public partial struct TargetingSystem : ISystem
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
             .WithDisabled<UnitTargetCD>()
-            .WithDisabled<UnitChargingState>()
+            .WithDisabled<UnitChargingCD>()
             .Build();
         
         enemyQuery = SystemAPI.QueryBuilder()
@@ -31,7 +31,7 @@ public partial struct TargetingSystem : ISystem
             .WithAll<LocalTransform>()
             .WithAll<UnitAliveState>()
             .WithDisabled<UnitTargetCD>()
-            .WithDisabled<UnitChargingState>()
+            .WithDisabled<UnitChargingCD>()
             .Build();
 
         // state.RequireForUpdate(playerQuery);
