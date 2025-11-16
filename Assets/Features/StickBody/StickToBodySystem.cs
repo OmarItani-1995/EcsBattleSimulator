@@ -57,7 +57,7 @@ public partial struct StickToBodySystem : ISystem
 
             var targetTransform = TransformLookup[stickToBody.Target];
             var transform = TransformLookup[entity];
-            var newPosition = targetTransform.Position + stickToBody.offsetPosition;
+            var newPosition = targetTransform.Position + stickToBody.OffsetPosition;
             transform.Position = newPosition;
             Ecb.SetComponent(index, entity, transform);
         }

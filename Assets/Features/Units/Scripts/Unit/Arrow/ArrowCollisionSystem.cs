@@ -21,9 +21,7 @@ public partial struct ArrowCollisionSystem : ISystem
             .WithAll<ArrowTag>()
             .WithAll<ArrowState>()
             .WithAll<CollisionBuffer>()
-            .WithAll<PhysicsCollider>()
-            .WithAll<PhysicsVelocity>()
-            .WithAll<PhysicsMass>()
+            .WithDisabled<StickToBody>()
             .Build();
         state.RequireForUpdate(_query);
         _localTransformLookup = state.GetComponentLookup<LocalTransform>(true);
@@ -58,26 +56,21 @@ public partial struct ArrowCollisionSystem : ISystem
         [ReadOnly] public PhysicsWorldIndex PhysicsWorldIndex;
         public EntityCommandBuffer.ParallelWriter Ecb;
 
-        private void Execute([ChunkIndexInQuery] int index, Entity entity, ref DynamicBuffer<CollisionBuffer> buffer, ref PhysicsVelocity velocity, ref PhysicsMass mass, ref PhysicsCollider collider)
+        private void Execute([ChunkIndexInQuery] int index, Entity entity, ref DynamicBuffer<CollisionBuffer> buffer, ref StickToBody stickToBody)
         {
             if (buffer.Length == 0)
             {
                 return;
             }
 
-            var stickToBody = new StickToBody()
-            {
-                Target = buffer[0].Entity,
-                offsetPosition = TransformLookup[entity].Position - TransformLookup[buffer[0].Entity].Position
-            };
+            stickToBody.Target = buffer[0].Entity;
+            stickToBody.OffsetPosition = TransformLookup[entity].Position - TransformLookup[buffer[0].Entity].Position;
 
             if (EntityStorageInfoLookup.Exists(entity))
             {
-                Ecb.AddComponent(index, entity, stickToBody);
                 Ecb.SetComponentEnabled<ArrowState>(index, entity, false);
                 Ecb.SetSharedComponent(index, entity, PhysicsWorldIndex);
-                // Ecb.RemoveComponent<PhysicsVelocity>(index,entity);
-                // Ecb.RemoveComponent<PhysicsCollider>(index, entity);
+                Ecb.SetComponentEnabled<StickToBody>(index, entity, true);
             }
         }
     }
