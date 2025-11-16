@@ -23,7 +23,7 @@ public partial struct FireRainSystem : ISystem
             .Build();
         state.RequireForUpdate(_query);
         state.RequireForUpdate<PhysicsWorldSingleton>();
-        state.RequireForUpdate<BeforeFixedUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         _hitsTakenLookup = state.GetBufferLookup<UnitHitsTaken>();
     }
 
@@ -31,7 +31,7 @@ public partial struct FireRainSystem : ISystem
     {
         _hitsTakenLookup.Update(ref state);
         
-        var ecbSystem = SystemAPI.GetSingleton<BeforeFixedUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
+        var ecbSystem = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
         var filter = new CollisionFilter

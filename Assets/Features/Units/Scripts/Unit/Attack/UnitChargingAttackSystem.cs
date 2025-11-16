@@ -75,8 +75,8 @@ public partial struct UnitChargingAttackSystem : ISystem
             }
 
             if (!(attack.TotalTime <= 0f)) return;
-            Ecb.RemoveComponent<UnitAttackCD>(index, entity);
-            Ecb.RemoveComponent<UnitTargetCD>(index, entity);
+            Ecb.SetComponentEnabled<UnitAttackCD>(index, entity, false);
+            Ecb.SetComponentEnabled<UnitTargetCD>(index, entity, false);
             
             var animator = AnimatorLookup[animatorHolder.AnimatorEntity];
             animator.currentClip = AnimationClipName.Charing_Run;

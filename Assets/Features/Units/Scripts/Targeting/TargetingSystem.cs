@@ -102,10 +102,11 @@ public partial struct TargetingSystem : ISystem
                 ecb.SetComponentEnabled<UnitTargetCD>(index, entity, true);
                 if (idx % 2 == 0)
                 {
-                    ecb.AddComponent(index, foundTargets[idx].Entity, new UnitTargetCD()
+                    ecb.SetComponent(index, foundTargets[idx].Entity, new UnitTargetCD()
                     {
                         TargetEntity = entity,
                     });
+                    ecb.SetComponentEnabled<UnitTargetCD>(index, foundTargets[idx].Entity, true);
                 }
             }
             
