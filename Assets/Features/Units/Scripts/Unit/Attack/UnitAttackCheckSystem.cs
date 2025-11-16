@@ -81,7 +81,7 @@ public partial struct UnitAttackCheckSystem : ISystem
                 animator.currentTick = 0;
                 animator.loop = false;
                 
-                Ecb.AddComponent(index, animatorHolder.AnimatorEntity, animator);
+                Ecb.SetComponent(index, animatorHolder.AnimatorEntity, animator);
 
                 attack.AttackTime = attackInfo.attackTime;
                 attack.TotalTime = attackInfo.attackTotalTime;
