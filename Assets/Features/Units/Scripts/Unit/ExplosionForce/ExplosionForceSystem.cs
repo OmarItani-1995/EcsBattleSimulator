@@ -41,7 +41,6 @@ public partial struct ExplosionForceSystem : ISystem
                 var position = transform.Position;
                 var explosionPoint = explosionBuffer[i].ForcePoint;
                 var forceMagnitude = explosionBuffer[i].ForceMagnitude;
-                const float radius = 6;
 
                 var direction = position - explosionPoint;
                 var distance = math.length(direction);
@@ -56,7 +55,7 @@ public partial struct ExplosionForceSystem : ISystem
 
                 direction = math.normalize(direction);
 
-                var falloff = math.saturate(1f - (distance / radius));
+                var falloff = math.saturate(1f - (distance / explosionBuffer[i].Radius));
 
                 var impulse = direction * forceMagnitude * falloff;
 

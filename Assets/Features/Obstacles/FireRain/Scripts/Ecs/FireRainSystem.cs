@@ -25,6 +25,15 @@ public partial struct FireRainSystem : ISystem
         state.RequireForUpdate<PhysicsWorldSingleton>();
         state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         _hitsTakenLookup = state.GetBufferLookup<UnitHitsTaken>();
+
+        var entity = state.EntityManager.CreateEntity(typeof(FireRainData));
+        state.EntityManager.SetComponentData(entity, new FireRainData
+        {
+            Radius = 4f,
+            ForceMagnitude = 150f,
+            
+        });
+        state.RequireForUpdate<FireRainData>();
     }
 
     public void OnUpdate(ref SystemState state)
@@ -34,6 +43,9 @@ public partial struct FireRainSystem : ISystem
         var ecbSystem = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSystem.CreateCommandBuffer(state.WorldUnmanaged);
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
+        
+        var data = SystemAPI.GetSingleton<FireRainData>();
+        
         var filter = new CollisionFilter
         {
             BelongsTo = 1 << 9,
@@ -45,7 +57,8 @@ public partial struct FireRainSystem : ISystem
             Ecb = ecb.AsParallelWriter(),
             PhysicsWorld = physicsWorld,
             CollisionFilter = filter,
-            HitsTakenLookup = _hitsTakenLookup
+            HitsTakenLookup = _hitsTakenLookup,
+            FireRainData = data
         };
         
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
@@ -59,12 +72,12 @@ public partial struct FireRainSystem : ISystem
         [ReadOnly] public PhysicsWorld PhysicsWorld;
         [ReadOnly] public CollisionFilter CollisionFilter;
         [ReadOnly] public BufferLookup<UnitHitsTaken> HitsTakenLookup;
-
+        [ReadOnly] public FireRainData FireRainData;
         private void Execute([ChunkIndexInQuery] int index, Entity entity, in LocalTransform transform)
         {
             var hitResults = new NativeList<DistanceHit>(Allocator.TempJob);
             
-            if (PhysicsWorld.OverlapSphere(transform.Position, 6, ref hitResults, CollisionFilter) )
+            if (PhysicsWorld.OverlapSphere(transform.Position, 4, ref hitResults, CollisionFilter) )
             {
                 for (int i = 0; i < hitResults.Length; i++)
                 {
@@ -79,7 +92,8 @@ public partial struct FireRainSystem : ISystem
                         Ecb.AppendToBuffer(index, hitEntity, new ExplosionForceCD()
                         {
                             ForcePoint = transform.Position,
-                            ForceMagnitude = 150f
+                            ForceMagnitude = FireRainData.ForceMagnitude,
+                            Radius = FireRainData.Radius
                         });
                     }
                 }
@@ -88,4 +102,10 @@ public partial struct FireRainSystem : ISystem
             hitResults.Dispose();
         }
     }
+}
+
+public struct FireRainData : IComponentData
+{
+    public float Radius;
+    public float ForceMagnitude;
 }

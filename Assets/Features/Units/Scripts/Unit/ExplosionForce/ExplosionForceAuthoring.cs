@@ -18,4 +18,5 @@ public struct ExplosionForceCD : IBufferElementData
 {
     public float ForceMagnitude;
     public float3 ForcePoint;
+    public float Radius;
 }
