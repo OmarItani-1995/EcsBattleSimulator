@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 843573017894498257, guid: 73144849905630d4e9b98e4dd4e74d3b, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 2cb55be83234e994f8cea299fafeb5f4, type: 2}
     - target: {fileID: 2275683728446155427, guid: 73144849905630d4e9b98e4dd4e74d3b, type: 3}
       propertyPath: shootingPosition.y
       value: 2.5171068

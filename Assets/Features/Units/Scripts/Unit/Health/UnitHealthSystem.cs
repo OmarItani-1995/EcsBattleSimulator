@@ -11,34 +11,28 @@ using Unity.Physics;
 [StructLayout(LayoutKind.Auto)]
 public partial struct UnitHealthSystem : ISystem
 {
-    private const float DeathDuration = 10f;
     private EntityQuery _query;
-    private ComponentLookup<AnimatorComponentData> _animatorLookup;
     public void OnCreate(ref SystemState state)
     {
         _query = SystemAPI.QueryBuilder()
             .WithAll<UnitHealthCD>()
             .WithAll<UnitHitsTaken>()
-            .WithAll<UnitAnimatorCD>()
+            .WithAll<AnimatorComponentData>()
             .WithAll<UnitAliveState>()
             .WithAll<PhysicsMass>()
             .Build();
         state.RequireForUpdate(_query);
-        _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(true);
         state.RequireForUpdate<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
-        _animatorLookup.Update(ref state);
         var ecbSingleton = SystemAPI.GetSingleton<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
         var job = new UnitHealthJob
         {
             Ecb = ecb.AsParallelWriter(),
-            AnimatorLookup = _animatorLookup,
-            deathDuration = DeathDuration
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
     }
@@ -47,12 +41,10 @@ public partial struct UnitHealthSystem : ISystem
     [StructLayout(LayoutKind.Auto)]
     private partial struct UnitHealthJob : IJobEntity
     {
-        [ReadOnly] public ComponentLookup<AnimatorComponentData> AnimatorLookup;
-        [ReadOnly] public float deathDuration;
         public EntityCommandBuffer.ParallelWriter Ecb;
 
         private void Execute([ChunkIndexInQuery] int index, Entity entity, ref UnitHealthCD health, 
-            DynamicBuffer<UnitHitsTaken> hitsTaken, ref UnitAnimatorCD animatorHolder, ref PhysicsMass mass)
+            DynamicBuffer<UnitHitsTaken> hitsTaken, ref AnimatorComponentData animator, ref PhysicsMass mass)
         {
             if (hitsTaken.Length == 0) return;
             
@@ -70,12 +62,9 @@ public partial struct UnitHealthSystem : ISystem
             inv.z = 1f;
             mass.InverseInertia = inv;
             
-            if (!AnimatorLookup.HasComponent(animatorHolder.AnimatorEntity)) return;
-            var animator = AnimatorLookup[animatorHolder.AnimatorEntity];
             animator.currentClip = AnimationClipName.Charging_Die;
             animator.currentTick = 0;
             animator.loop = false;
-            Ecb.SetComponent(index, animatorHolder.AnimatorEntity, animator);
         }
     }
 }

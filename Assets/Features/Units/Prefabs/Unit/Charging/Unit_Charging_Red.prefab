@@ -36,6 +36,10 @@ PrefabInstance:
       propertyPath: Direction.z
       value: -1
       objectReference: {fileID: 0}
+    - target: {fileID: 4425892060700225878, guid: 36f3a4055910df34684dc720ab94191e, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bf1fd25e2eda5184889fd5a97562986a, type: 2}
     - target: {fileID: 4753141435659627316, guid: 36f3a4055910df34684dc720ab94191e, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 

@@ -28,6 +28,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Unit_Charging
       objectReference: {fileID: 0}
+    - target: {fileID: 7057154138781137656, guid: bef2239e6f50f7846baa55aeba02a84e, type: 3}
+      propertyPath: startingClip
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7057154138781137656, guid: bef2239e6f50f7846baa55aeba02a84e, type: 3}
+      propertyPath: startingLoop
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8341543982536432927, guid: bef2239e6f50f7846baa55aeba02a84e, type: 3}
       propertyPath: m_LocalPosition.x
       value: 150.2

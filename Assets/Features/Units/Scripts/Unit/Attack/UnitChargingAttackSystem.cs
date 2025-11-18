@@ -13,25 +13,22 @@ public partial struct UnitChargingAttackSystem : ISystem
 {
     private EntityQuery _query;
     private ComponentLookup<LocalTransform> _transformLookup;
-    private ComponentLookup<AnimatorComponentData> _animatorLookup;
     public void OnCreate(ref SystemState state)
     {
         _query = SystemAPI.QueryBuilder()
             .WithAll<UnitAttackCD>()
             .WithAll<UnitAliveState>()
-            .WithAll<UnitAnimatorCD>()
+            .WithAll<AnimatorComponentData>()
             .WithAll<UnitTargetCD>()
             .Build();
         state.RequireForUpdate(_query);
         _transformLookup = state.GetComponentLookup<LocalTransform>(true);
-        _animatorLookup = state.GetComponentLookup<AnimatorComponentData>(true);
         state.RequireForUpdate<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     public void OnUpdate(ref SystemState state)
     {
         _transformLookup.Update(ref state);
-        _animatorLookup.Update(ref state);
         
         var deltaTime = SystemAPI.Time.DeltaTime;
         var ecbSingleton = SystemAPI.GetSingleton<UnitLateUpdateEndSimulationEntityCommandBufferSystem.Singleton>();
@@ -41,7 +38,6 @@ public partial struct UnitChargingAttackSystem : ISystem
             DeltaTime = deltaTime,
             Ecb = ecb.AsParallelWriter(),
             TransformLookup = _transformLookup,
-            AnimatorLookup = _animatorLookup
         };
         state.Dependency = job.ScheduleParallel(_query, state.Dependency);
     }
@@ -52,11 +48,10 @@ public partial struct UnitChargingAttackSystem : ISystem
     {
         [ReadOnly] public float DeltaTime;
         [ReadOnly] public ComponentLookup<LocalTransform> TransformLookup;
-        [ReadOnly] public ComponentLookup<AnimatorComponentData> AnimatorLookup;
         public EntityCommandBuffer.ParallelWriter Ecb;
 
         private void Execute([ChunkIndexInQuery] int index, Entity entity, ref UnitAttackCD attack,
-            in UnitTargetCD target, in UnitAnimatorCD animatorHolder)
+            in UnitTargetCD target, ref AnimatorComponentData animator)
         {
             attack.TotalTime -= DeltaTime;
             if (!attack.DidAttack && attack.TotalTime <= attack.AttackTime)
@@ -78,11 +73,9 @@ public partial struct UnitChargingAttackSystem : ISystem
             Ecb.SetComponentEnabled<UnitAttackCD>(index, entity, false);
             Ecb.SetComponentEnabled<UnitTargetCD>(index, entity, false);
             
-            var animator = AnimatorLookup[animatorHolder.AnimatorEntity];
             animator.currentClip = AnimationClipName.Charing_Run;
             animator.currentTick = 0;
             animator.loop = true;
-            Ecb.SetComponent(index, animatorHolder.AnimatorEntity, animator);
         }
     }
 }

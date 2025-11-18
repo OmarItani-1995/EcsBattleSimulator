@@ -23,7 +23,6 @@ public partial struct UnitArrowAttackSystem : ISystem
             .WithAll<ArrowShootingCD>()
             .WithAll<UnitAttackCooldownCD>()
             .WithAll<LocalTransform>()
-            .WithAll<UnitAnimatorCD>()
             .WithDisabled<UnitAttackCooldownState>()
             .Build();
         state.RequireForUpdate(_query);
